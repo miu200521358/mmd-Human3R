@@ -6,9 +6,9 @@ import torch
 from torch import nn
 import smplx
 import torch
-from dust3r.utils.geometry import inverse_perspective_projection, perspective_projection
+from src.dust3r.utils.geometry import inverse_perspective_projection, perspective_projection
 import roma
-from dust3r.smpl_model import SMPLX_DIR
+from src.dust3r.smpl_model import SMPLX_DIR
 from smplx.joint_names import JOINT_NAMES
 
 class SMPL_Layer(nn.Module):

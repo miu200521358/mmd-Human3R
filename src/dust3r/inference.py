@@ -1,10 +1,10 @@
 import tqdm
 import torch
-from dust3r.utils.device import to_cpu, collate_with_cat
-from dust3r.utils.misc import invalid_to_nans
-from dust3r.utils.geometry import depthmap_to_pts3d, geotrf
-from dust3r.model import ARCroco3DStereo
-from dust3r.smpl_model import SMPLModel
+from src.dust3r.utils.device import to_cpu, collate_with_cat
+from src.dust3r.utils.misc import invalid_to_nans
+from src.dust3r.utils.geometry import depthmap_to_pts3d, geotrf
+from src.dust3r.model import ARCroco3DStereo
+from src.dust3r.smpl_model import SMPLModel
 from accelerate import Accelerator
 import re
 

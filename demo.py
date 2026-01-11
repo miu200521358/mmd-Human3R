@@ -175,7 +175,7 @@ def prepare_input(
     """
     # Import image loader (delayed import needed after adding ckpt path).
     from src.dust3r.utils.image import load_images, pad_image
-    from dust3r.utils.geometry import get_camera_parameters
+    from src.dust3r.utils.geometry import get_camera_parameters
 
     images = load_images(img_paths, size=size)
     if img_res is not None:

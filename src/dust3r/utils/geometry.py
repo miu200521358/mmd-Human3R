@@ -2,14 +2,14 @@
 # Licensed under CC BY-NC-SA 4.0 (non-commercial use only).
 #
 # --------------------------------------------------------
-# modified from DUSt3R
+# modified from src.dust3r
 
 import torch
 import numpy as np
 from scipy.spatial import cKDTree as KDTree
 
-from dust3r.utils.misc import invalid_to_zeros, invalid_to_nans
-from dust3r.utils.device import to_numpy
+from src.dust3r.utils.misc import invalid_to_zeros, invalid_to_nans
+from src.dust3r.utils.device import to_numpy
 
 
 def xy_grid(

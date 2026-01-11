@@ -3,8 +3,8 @@ os.environ['PYOPENGL_PLATFORM'] = 'egl'
 
 import torch
 from gsplat import rasterization
-from dust3r.utils.geometry import inv, geotrf
-from dust3r.utils.image import unpad_image
+from src.dust3r.utils.geometry import inv, geotrf
+from src.dust3r.utils.image import unpad_image
 import numpy as np
 try:
     import pyrender

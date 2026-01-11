@@ -2,13 +2,13 @@
 # Licensed under CC BY-NC-SA 4.0 (non-commercial use only).
 #
 # --------------------------------------------------------
-# modified from DUSt3R
+# modified from src.dust3r
 
 from einops import rearrange
 from typing import List
 import torch
 import torch.nn as nn
-from dust3r.heads.postprocess import (
+from src.dust3r.heads.postprocess import (
     postprocess,
     postprocess_desc,
     postprocess_rgb,
@@ -20,10 +20,10 @@ from dust3r.heads.postprocess import (
 )
 import dust3r.utils.path_to_croco  # noqa: F401
 from models.dpt_block import DPTOutputAdapter, Interpolate  # noqa
-from dust3r.utils.camera import pose_encoding_to_camera, PoseDecoder
-from dust3r.blocks import ConditionModulationBlock
+from src.dust3r.utils.camera import pose_encoding_to_camera, PoseDecoder
+from src.dust3r.blocks import ConditionModulationBlock
 from torch.utils.checkpoint import checkpoint
-from dust3r.smpl_model import SMPLDecoder, MEAN_PARAMS, regression_mlp
+from src.dust3r.smpl_model import SMPLDecoder, MEAN_PARAMS, regression_mlp
 import numpy as np
 
 

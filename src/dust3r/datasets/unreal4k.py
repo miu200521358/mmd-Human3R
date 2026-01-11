@@ -8,8 +8,8 @@ import sys
 
 sys.path.append(osp.join(osp.dirname(__file__), "..", ".."))
 
-from dust3r.datasets.base.base_multiview_dataset import BaseMultiViewDataset
-from dust3r.utils.image import imread_cv2
+from src.dust3r.datasets.base.base_multiview_dataset import BaseMultiViewDataset
+from src.dust3r.utils.image import imread_cv2
 
 R_conv = np.array([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]).astype(
     np.float32

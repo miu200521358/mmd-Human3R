@@ -6,12 +6,12 @@ import torch
 import numpy as np
 import smplx
 from smplx.joint_names import JOINT_NAMES
-from dust3r.utils.geometry import (
+from src.dust3r.utils.geometry import (
     perspective_projection, 
     resize_camera_intrinsics,
     get_camera_parameters
 )
-from dust3r.utils.image import pad_image
+from src.dust3r.utils.image import pad_image
 import roma
 import pickle
 import os
@@ -251,7 +251,7 @@ class SMPLModel(object):
         torch.cuda.empty_cache()
     
     def update_smpl_gt_eval(self, views, dataset):
-        from dust3r.utils.geometry import geotrf
+        from src.dust3r.utils.geometry import geotrf
 
         target = {}
         batch_size = views[0]["img"].shape[0]
@@ -367,7 +367,7 @@ def get_score(n_patch, pk_idx, smpl_mask):
 
 
 import torch.nn as nn
-from croco.models.blocks import Mlp_flex
+from src.croco.models.blocks import Mlp_flex
 
 class SMPLDecoder(nn.Module):
     def __init__(

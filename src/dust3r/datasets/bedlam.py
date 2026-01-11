@@ -5,8 +5,8 @@ import sys
 import pickle
 sys.path.append(osp.join(osp.dirname(__file__), "..", ".."))
 from tqdm import tqdm
-from dust3r.datasets.base.base_multiview_dataset import BaseMultiViewDataset
-from dust3r.utils.image import imread_cv2
+from src.dust3r.datasets.base.base_multiview_dataset import BaseMultiViewDataset
+from src.dust3r.utils.image import imread_cv2
 
 invalid_seqs = [
     "20221010_3-10_500_batch01hand_zoom_suburb_d_seq_000042",

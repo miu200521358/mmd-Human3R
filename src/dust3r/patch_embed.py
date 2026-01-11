@@ -2,7 +2,7 @@
 # Licensed under CC BY-NC-SA 4.0 (non-commercial use only).
 #
 # --------------------------------------------------------
-# modified from DUSt3R
+# modified from src.dust3r
 
 import torch
 import dust3r.utils.path_to_croco  # noqa: F401

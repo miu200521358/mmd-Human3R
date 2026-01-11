@@ -2,7 +2,7 @@
 # Licensed under CC BY-NC-SA 4.0 (non-commercial use only).
 #
 # --------------------------------------------------------
-# modified from DUSt3R
+# modified from src.dust3r
 
 import PIL.Image
 import numpy as np
@@ -12,13 +12,13 @@ import cv2
 import matplotlib as mpl
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
-from dust3r.utils.geometry import (
+from src.dust3r.utils.geometry import (
     geotrf,
     get_med_dist_between_poses,
     depthmap_to_absolute_camera_coordinates,
 )
-from dust3r.utils.device import to_numpy
-from dust3r.utils.image import rgb, img_to_arr
+from src.dust3r.utils.device import to_numpy
+from src.dust3r.utils.image import rgb, img_to_arr
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 

@@ -2,7 +2,7 @@
 # Licensed under CC BY-NC-SA 4.0 (non-commercial use only).
 #
 # --------------------------------------------------------
-# modified from DUSt3R
+# modified from src.dust3r
 
 import os
 import torch

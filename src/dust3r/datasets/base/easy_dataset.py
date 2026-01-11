@@ -2,10 +2,10 @@
 # Licensed under CC BY-NC-SA 4.0 (non-commercial use only).
 #
 # --------------------------------------------------------
-# modified from DUSt3R
+# modified from src.dust3r
 
 import numpy as np
-from dust3r.datasets.base.batched_sampler import (
+from src.dust3r.datasets.base.batched_sampler import (
     BatchedRandomSampler,
     CustomRandomSampler,
 )

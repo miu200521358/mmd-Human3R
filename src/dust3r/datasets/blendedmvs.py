@@ -4,8 +4,8 @@ import os
 import sys
 
 sys.path.append(osp.join(osp.dirname(__file__), "..", ".."))
-from dust3r.datasets.base.base_multiview_dataset import BaseMultiViewDataset
-from dust3r.utils.image import imread_cv2
+from src.dust3r.datasets.base.base_multiview_dataset import BaseMultiViewDataset
+from src.dust3r.utils.image import imread_cv2
 import h5py
 from tqdm import tqdm
 

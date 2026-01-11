@@ -16,7 +16,7 @@ from transformers import PreTrainedModel
 from transformers.modeling_outputs import BaseModelOutput
 from transformers.file_utils import ModelOutput
 import time
-from dust3r.utils.misc import (
+from src.dust3r.utils.misc import (
     fill_default_args,
     freeze_all_params,
     fix_all_params,
@@ -24,12 +24,12 @@ from dust3r.utils.misc import (
     interleave,
     transpose_to_landscape,
 )
-from dust3r.heads import head_factory
-from dust3r.utils.camera import PoseEncoder
-from dust3r.patch_embed import get_patch_embed
+from src.dust3r.heads import head_factory
+from src.dust3r.utils.camera import PoseEncoder
+from src.dust3r.patch_embed import get_patch_embed
 import dust3r.utils.path_to_croco  # noqa: F401
 from models.croco import CroCoNet, CrocoConfig  # noqa
-from dust3r.blocks import (
+from src.dust3r.blocks import (
     Block,
     DecoderBlock,
     Mlp,
@@ -42,15 +42,15 @@ from dust3r.blocks import (
 inf = float("inf")
 from accelerate.logging import get_logger
 
-from dust3r.smpl_model import nms, apply_threshold
+from src.dust3r.smpl_model import nms, apply_threshold
 from einops import rearrange
 
-from dust3r.utils.geometry import inverse_perspective_projection, get_camera_parameters
-from dust3r.utils.image import unpad_uv, log_optimal_transport
+from src.dust3r.utils.geometry import inverse_perspective_projection, get_camera_parameters
+from src.dust3r.utils.image import unpad_uv, log_optimal_transport
 from mhmr.blocks import Dinov2Backbone, FourierPositionEncoding, TransformerDecoder
 printer = get_logger(__name__, log_level="DEBUG")
 
-from dust3r.utils.device import to_cpu, to_gpu
+from src.dust3r.utils.device import to_cpu, to_gpu
 
 @dataclass
 class ARCroco3DStereoOutput(ModelOutput):

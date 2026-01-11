@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from croco.models.blocks import Mlp
-from dust3r.heads.postprocess import postprocess_pose
+from src.croco.models.blocks import Mlp
+from src.dust3r.heads.postprocess import postprocess_pose
 
 inf = float("inf")
 

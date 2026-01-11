@@ -2,11 +2,11 @@
 # Licensed under CC BY-NC-SA 4.0 (non-commercial use only).
 #
 # --------------------------------------------------------
-# modified from DUSt3R
+# modified from src.dust3r
 
 import numpy as np
 import torch
-from dust3r.utils.geometry import xy_grid
+from src.dust3r.utils.geometry import xy_grid
 
 
 def estimate_focal_knowing_depth(

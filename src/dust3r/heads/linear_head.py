@@ -2,12 +2,12 @@
 # Licensed under CC BY-NC-SA 4.0 (non-commercial use only).
 #
 # --------------------------------------------------------
-# modified from DUSt3R
+# modified from src.dust3r
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dust3r.heads.postprocess import (
+from src.dust3r.heads.postprocess import (
     postprocess,
     postprocess_desc,
     postprocess_rgb,
@@ -17,9 +17,9 @@ from dust3r.heads.postprocess import (
 )
 import dust3r.utils.path_to_croco  # noqa
 from models.blocks import Mlp  # noqa
-from dust3r.utils.geometry import geotrf
-from dust3r.utils.camera import pose_encoding_to_camera, PoseDecoder
-from dust3r.blocks import ConditionModulationBlock
+from src.dust3r.utils.geometry import geotrf
+from src.dust3r.utils.camera import pose_encoding_to_camera, PoseDecoder
+from src.dust3r.blocks import ConditionModulationBlock
 
 
 class LinearPts3d(nn.Module):

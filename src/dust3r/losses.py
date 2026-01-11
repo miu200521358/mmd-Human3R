@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from dust3r.utils.geometry import (
+from src.dust3r.utils.geometry import (
     inv,
     geotrf,
     normalize_pointcloud_group,
@@ -11,13 +11,13 @@ from dust3r.utils.geometry import (
     to_euclidean_dist,
 )
 import numpy as np
-from dust3r.utils.camera import (
+from src.dust3r.utils.camera import (
     pose_encoding_to_camera,
     camera_to_pose_encoding,
     relative_pose_absT_quatR,
 )
-from dust3r.utils.image import unpad_image
-from dust3r.utils import SMPL_Layer
+from src.dust3r.utils.image import unpad_image
+from src.dust3r.utils import SMPL_Layer
 
 import roma
 from tqdm import tqdm

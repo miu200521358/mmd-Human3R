@@ -2,7 +2,7 @@
 # Licensed under CC BY-NC-SA 4.0 (non-commercial use only).
 #
 # --------------------------------------------------------
-# modified from DUSt3R
+# modified from src.dust3r
 
 from .linear_head import LinearPts3d, LinearPts3d_Desc, LinearPts3dPose
 from .dpt_head import DPTPts3dPose, DPTPts3dPoseSMPL, NaiveDPTPts3dPoseSMPL

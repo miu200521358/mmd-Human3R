@@ -5,8 +5,8 @@ sys.path.append(osp.join(osp.dirname(__file__), "..", ".."))
 import cv2
 import numpy as np
 
-from dust3r.datasets.co3d import Co3d_Multi
-from dust3r.utils.image import imread_cv2
+from src.dust3r.datasets.co3d import Co3d_Multi
+from src.dust3r.utils.image import imread_cv2
 
 
 class Cop3D_Multi(Co3d_Multi):

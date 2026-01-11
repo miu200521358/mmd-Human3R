@@ -22,11 +22,11 @@ import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
-from dust3r.utils.device import todevice
+from src.dust3r.utils.device import todevice
 
 torch.backends.cuda.matmul.allow_tf32 = True  # for gpu >= Ampere and pytorch >= 1.12
 
-from dust3r.model import (
+from src.dust3r.model import (
     PreTrainedModel,
     ARCroco3DStereo,
     ARCroco3DStereoConfig,
@@ -34,15 +34,15 @@ from dust3r.model import (
     strip_module,
     strip_module_mhmr,
 )  # noqa: F401, needed when loading the model
-from dust3r.smpl_model import SMPLModel
-from dust3r.datasets import get_data_loader
-from dust3r.losses import *  # noqa: F401, needed when loading the model
-from dust3r.inference import loss_of_one_batch  # noqa
-from dust3r.viz import colorize
-from dust3r.utils.render import get_render_results, get_render_smpl
+from src.dust3r.smpl_model import SMPLModel
+from src.dust3r.datasets import get_data_loader
+from src.dust3r.losses import *  # noqa: F401, needed when loading the model
+from src.dust3r.inference import loss_of_one_batch  # noqa
+from src.dust3r.viz import colorize
+from src.dust3r.utils.render import get_render_results, get_render_smpl
 import dust3r.utils.path_to_croco  # noqa: F401
 import croco.utils.misc as misc  # noqa
-from croco.utils.misc import NativeScalerWithGradNormCount as NativeScaler  # noqa
+from src.croco.utils.misc import NativeScalerWithGradNormCount as NativeScaler  # noqa
 
 import hydra
 from omegaconf import OmegaConf

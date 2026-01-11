@@ -3,11 +3,11 @@ import numpy as np
 import torch
 import random
 import itertools
-from dust3r.datasets.base.easy_dataset import EasyDataset
-from dust3r.datasets.utils.transforms import ImgNorm, SeqColorJitter
-from dust3r.utils.geometry import depthmap_to_absolute_camera_coordinates
+from src.dust3r.datasets.base.easy_dataset import EasyDataset
+from src.dust3r.datasets.utils.transforms import ImgNorm, SeqColorJitter
+from src.dust3r.utils.geometry import depthmap_to_absolute_camera_coordinates
 import dust3r.datasets.utils.cropping as cropping
-from dust3r.datasets.utils.corr import extract_correspondences_from_pts3d
+from src.dust3r.datasets.utils.corr import extract_correspondences_from_pts3d
 import torchvision.transforms as tvf
 
 def get_ray_map(c2w1, c2w2, intrinsics, h, w):
