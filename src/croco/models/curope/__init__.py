@@ -4,6 +4,7 @@
 # src/croco/models/curope/__init__.py
 try:
     from .curope2d import cuRoPE2D
-except Exception:
+except Exception as e:
+    print(f"Could not import curope2d: {e}")
     # fallback to torch implementation
     pass

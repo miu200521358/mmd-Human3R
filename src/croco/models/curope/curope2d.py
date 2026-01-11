@@ -4,8 +4,9 @@
 import torch
 
 try:
-    import curope as _kernels  # run `python setup.py install`
-except ModuleNotFoundError:
+    import croco.models.curope.curope as _kernels  # run `python setup.py install`
+except ModuleNotFoundError as e:
+    print(f"Could not import curope: {e}")
     from . import curope as _kernels  # run `python setup.py build_ext --inplace`
 
 
