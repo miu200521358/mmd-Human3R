@@ -29,6 +29,7 @@ from copy import deepcopy
 from add_ckpt_path import add_path_to_dust3r
 import imageio.v2 as iio
 import roma
+from tqdm import tqdm
 
 # Set random seed for reproducibility.
 random.seed(42)
@@ -183,7 +184,7 @@ def prepare_input(
     views = []
     if raymaps is None and raymap_mask is None:
         # Only images are provided.
-        for i in range(len(images)):
+        for i in tqdm(range(len(images)), desc="Preparing input views"):
             view = {
                 "img": images[i]["img"],
                 "ray_map": torch.full(
@@ -222,7 +223,7 @@ def prepare_input(
 
         j = 0
         k = 0
-        for i in range(num_views):
+        for i in tqdm(range(num_views), desc="Preparing input views"):
             view = {
                 "img": (
                     images[j]["img"]
@@ -430,7 +431,7 @@ def prepare_output(
         os.makedirs(os.path.join(outdir, "smpl"), exist_ok=True)
 
     all_verts = []
-    for f_id in range(B):
+    for f_id in tqdm(range(B), desc="Processing frames"):
         n_humans_i = smpl_shape[f_id].shape[0]
         
         if n_humans_i > 0:
@@ -550,7 +551,7 @@ def parse_seq_path(p):
         )
         img_paths = []
         tmpdirname = tempfile.mkdtemp()
-        for i in frame_indices:
+        for i in tqdm(frame_indices, desc="Extracting frames from video"):
             cap.set(cv2.CAP_PROP_POS_FRAMES, i)
             ret, frame = cap.read()
             if not ret:

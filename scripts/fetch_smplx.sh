@@ -34,5 +34,5 @@ rm -rf src/models/smpl/smpl.zip
 
 # Supplementary SMPL and SMPL-X files
 gdown --folder -O ./src/models/ https://drive.google.com/drive/folders/1JU7CuU2rKkwD7WWjvSZJKpQFFk_Z6NL7?usp=share_link
-mv src/models/J_regressor_h36m.npy src/models/smpl/J_regressor_h36m.npy
-mv src/models/smplx2smpl.pkl src/models/smplx/smplx2smpl.pkl
+mv src/models/body_models/J_regressor_h36m.npy src/models/smpl/J_regressor_h36m.npy
+mv src/models/body_models/smplx2smpl.pkl src/models/smplx/smplx2smpl.pkl

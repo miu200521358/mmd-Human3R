@@ -26,4 +26,3 @@ pyrender==0.1.45
 smplx
 pyvista==0.42.3
 spaces==0.19.4
-git+https://github.com/mattloper/chumpy@9b045ff5d6588a24a0bab52c83f032e2ba433e17
