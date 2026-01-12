@@ -23,6 +23,7 @@ import glob
 import random
 import cv2
 import argparse
+import json
 import tempfile
 import shutil
 from copy import deepcopy
@@ -421,6 +422,15 @@ def prepare_output(
                             kid=False, 
                             person_center='head')
     smpl_faces = smpl_layer.bm_x.faces
+    joint_names = smpl_layer.joint_names
+
+    joints_json = {"frames": {}} if save else None
+
+    def joints_to_dict(joints, names):
+        return {
+            name: {"x": float(joint[0]), "y": float(joint[1]), "z": float(joint[2])}
+            for name, joint in zip(names, joints)
+        }
 
     if save:
         print(f"Saving output to {outdir}...")
@@ -449,6 +459,43 @@ def prepare_output(
         color = colors_tosave[f_id].numpy()
         c2w = cam2world_tosave[f_id].numpy()
         intrins = intrinsics_tosave[f_id].numpy()
+
+        if save:
+            frame_key = str(f_id)
+            frame_entry = {
+                "camera": {
+                    "x": float(c2w[0, 3]),
+                    "y": float(c2w[1, 3]),
+                    "z": float(c2w[2, 3]),
+                }
+            }
+            if n_humans_i > 0:
+                j3d_cam = smpl_out["smpl_j3d"].detach().cpu().numpy()
+                j3d_world = (
+                    geotrf(pr_poses[f_id], smpl_out["smpl_j3d"].unsqueeze(0))[0]
+                    .detach()
+                    .cpu()
+                    .numpy()
+                )
+                names = joint_names[: j3d_cam.shape[1]]
+                frame_entry["3d_joints"] = joints_to_dict(j3d_cam[0], names)
+                frame_entry["global_3d_joints"] = joints_to_dict(j3d_world[0], names)
+                if n_humans_i > 1:
+                    frame_entry["humans"] = {}
+                    person_ids = (
+                        smpl_id[f_id].detach().cpu().numpy().tolist()
+                        if smpl_id[f_id].numel() > 0
+                        else list(range(n_humans_i))
+                    )
+                    for idx, pid in enumerate(person_ids):
+                        frame_entry["humans"][str(pid)] = {
+                            "3d_joints": joints_to_dict(j3d_cam[idx], names),
+                            "global_3d_joints": joints_to_dict(j3d_world[idx], names),
+                        }
+            else:
+                frame_entry["3d_joints"] = {}
+                frame_entry["global_3d_joints"] = {}
+            joints_json["frames"][frame_key] = frame_entry
 
         if n_humans_i > 0:
             # transform smpl verts to world coordinates
@@ -509,6 +556,11 @@ def prepare_output(
                 os.path.join(outdir, "color_smpl", f"{f_id:06d}.png"),
                 color_smpl,
             )
+
+    if save:
+        joints_json_path = os.path.join(outdir, "joints_3d.json")
+        with open(joints_json_path, "w") as f:
+            json.dump(joints_json, f, indent=4)
 
     if render and render_video:
         print(f"Saving smpl mesh projection to {outdir}...")
