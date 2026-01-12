@@ -10,6 +10,7 @@ import numpy as np
 import PIL.Image
 from PIL.ImageOps import exif_transpose
 import torchvision.transforms as tvf
+from tqdm import tqdm
 
 os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
 import cv2  # noqa
@@ -72,7 +73,7 @@ def _resize_pil_image(img, long_edge_size):
     return img.resize(new_size, interp)
 
 
-def load_images(folder_or_list, size, square_ok=False, verbose=True):
+def load_images(folder_or_list, size, square_ok=False, verbose=False):
     """open and convert all images in a list or folder to proper input format for DUSt3R"""
     if isinstance(folder_or_list, str):
         if verbose:
@@ -93,7 +94,7 @@ def load_images(folder_or_list, size, square_ok=False, verbose=True):
     supported_images_extensions = tuple(supported_images_extensions)
 
     imgs = []
-    for path in folder_content:
+    for path in tqdm(folder_content, desc="Loading images"):
         if not path.lower().endswith(supported_images_extensions):
             continue
         img = exif_transpose(PIL.Image.open(os.path.join(root, path))).convert("RGB")

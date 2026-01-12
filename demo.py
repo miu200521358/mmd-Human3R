@@ -645,37 +645,38 @@ def run_inference(args):
         args.save, args.render, args.render_video, img_res, args.subsample
     )
 
-    # Convert tensors to numpy arrays for visualization.
-    pts3ds_to_vis = [p.cpu().numpy() for p in pts3ds_other]
-    colors_to_vis = [c.cpu().numpy() for c in colors]
-    msks_to_vis = [m.cpu().numpy() for m in msks]
-    conf_to_vis = [c.cpu().numpy() for c in conf]
-    edge_colors = [None] * len(pts3ds_to_vis)
-    verts_to_vis = [p.cpu().numpy() for p in all_smpl_verts]
+    if not args.save:
+        # Convert tensors to numpy arrays for visualization.
+        pts3ds_to_vis = [p.cpu().numpy() for p in pts3ds_other]
+        colors_to_vis = [c.cpu().numpy() for c in colors]
+        msks_to_vis = [m.cpu().numpy() for m in msks]
+        conf_to_vis = [c.cpu().numpy() for c in conf]
+        edge_colors = [None] * len(pts3ds_to_vis)
+        verts_to_vis = [p.cpu().numpy() for p in all_smpl_verts]
 
-    # Create and run the point cloud viewer.
-    print("Launching Human3R viewer...")
-    viewer = SceneHumanViewer(
-        pts3ds_to_vis,
-        colors_to_vis,
-        conf_to_vis,
-        cam_dict,
-        verts_to_vis,
-        smpl_faces,
-        smpl_id,
-        msks_to_vis,
-        device=device,
-        edge_color_list=edge_colors,
-        show_camera=True,
-        vis_threshold=args.vis_threshold,
-        msk_threshold=args.msk_threshold,
-        mask_morph=args.mask_morph,
-        size = args.size,
-        downsample_factor=args.downsample_factor,
-        smpl_downsample_factor=args.smpl_downsample,
-        camera_downsample_factor=args.camera_downsample
-    )
-    viewer.run()
+        # Create and run the point cloud viewer.
+        print("Launching Human3R viewer...")
+        viewer = SceneHumanViewer(
+            pts3ds_to_vis,
+            colors_to_vis,
+            conf_to_vis,
+            cam_dict,
+            verts_to_vis,
+            smpl_faces,
+            smpl_id,
+            msks_to_vis,
+            device=device,
+            edge_color_list=edge_colors,
+            show_camera=True,
+            vis_threshold=args.vis_threshold,
+            msk_threshold=args.msk_threshold,
+            mask_morph=args.mask_morph,
+            size = args.size,
+            downsample_factor=args.downsample_factor,
+            smpl_downsample_factor=args.smpl_downsample,
+            camera_downsample_factor=args.camera_downsample
+        )
+        viewer.run()
 
 
 def main():
@@ -686,7 +687,10 @@ def main():
         )
         return
     else:
+        start_time = time.time()
         run_inference(args)
+        total_time = time.time() - start_time
+        print(f"処理終了: 合計時間 {total_time / 60:.2f} 分 {total_time % 60:.2f} 秒")
 
 
 if __name__ == "__main__":

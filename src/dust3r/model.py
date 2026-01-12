@@ -51,6 +51,7 @@ from mhmr.blocks import Dinov2Backbone, FourierPositionEncoding, TransformerDeco
 printer = get_logger(__name__, log_level="DEBUG")
 
 from src.dust3r.utils.device import to_cpu, to_gpu
+from tqdm import tqdm
 
 @dataclass
 class ARCroco3DStereoOutput(ModelOutput):
@@ -1445,7 +1446,7 @@ class ARCroco3DStereo(CroCoNet):
         last_smpl_id = None
         max_smpl_id = -1
         reset_mask = False
-        for i, _view in enumerate(views):
+        for i, _view in tqdm(enumerate(views), total=len(views), desc="Recurrent Lighter"):
             view = to_gpu(_view, device)
             batch_size = view["img"].shape[0]
             img_mask = view["img_mask"].reshape(
@@ -1707,7 +1708,7 @@ class ARCroco3DStereo(CroCoNet):
         last_smpl_id = None
         max_smpl_id = -1
         reset_mask = False
-        for i, _view in enumerate(views):
+        for i, _view in tqdm(enumerate(views), total=len(views), desc="Recurrent Lighter Naive"):
             view = to_gpu(_view, device)
             batch_size = view["img"].shape[0]
             img_mask = view["img_mask"].reshape(
