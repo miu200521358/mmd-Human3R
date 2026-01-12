@@ -10,9 +10,9 @@ from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 # alternatively, you can list cuda archs that you want, eg:
 all_cuda_archs = [
 # '-gencode', 'arch=compute_70,code=sm_70',
-# '-gencode', 'arch=compute_75,code=sm_75',
+'-gencode', 'arch=compute_75,code=sm_75',
 # '-gencode', 'arch=compute_80,code=sm_80',
-'-gencode', 'arch=compute_86,code=sm_86'
+# '-gencode', 'arch=compute_86,code=sm_86'
 ]
 
 setup(
