@@ -437,10 +437,19 @@ def prepare_output(
             for name, joint in zip(names, joints)
         }
 
+    def normalize_human_index(human_id):
+        try:
+            return int(human_id)
+        except (TypeError, ValueError):
+            return str(human_id)
+
     def get_human_entry(human_id):
         human_key = str(human_id)
         if human_key not in joints_json_by_human:
-            joints_json_by_human[human_key] = {"frames": {}}
+            joints_json_by_human[human_key] = {
+                "human_index": normalize_human_index(human_id),
+                "frames": {},
+            }
         return human_key
 
     if save:
