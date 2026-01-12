@@ -425,10 +425,15 @@ def prepare_output(
     joint_names = smpl_layer.joint_names
 
     joints_json_by_human = {} if save else None
+    axis_sign = {"x": 1.0, "y": -1.0, "z": 1.0}
 
     def joints_to_dict(joints, names):
         return {
-            name: {"x": float(joint[0]), "y": float(joint[1]), "z": float(joint[2])}
+            name: {
+                "x": float(joint[0] * axis_sign["x"]),
+                "y": float(joint[1] * axis_sign["y"]),
+                "z": float(joint[2] * axis_sign["z"]),
+            }
             for name, joint in zip(names, joints)
         }
 
@@ -470,9 +475,9 @@ def prepare_output(
         if save and n_humans_i > 0:
             frame_key = str(f_id)
             camera_entry = {
-                "x": float(c2w[0, 3]),
-                "y": float(c2w[1, 3]),
-                "z": float(c2w[2, 3]),
+                "x": float(c2w[0, 3] * axis_sign["x"]),
+                "y": float(c2w[1, 3] * axis_sign["y"]),
+                "z": float(c2w[2, 3] * axis_sign["z"]),
             }
             j3d_cam = smpl_out["smpl_j3d"].detach().cpu().numpy()
             j3d_world = (
