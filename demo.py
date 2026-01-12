@@ -690,7 +690,7 @@ def main():
         start_time = time.time()
         run_inference(args)
         total_time = time.time() - start_time
-        print(f"処理終了: 合計時間 {total_time / 60:.2f} 分 {total_time % 60:.2f} 秒")
+        print(f"Human3R 処理終了: 合計時間 {total_time / 60:.2f} 分")
 
 
 if __name__ == "__main__":
