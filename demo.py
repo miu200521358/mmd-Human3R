@@ -48,6 +48,23 @@ def parse_args():
         help="Path to the pretrained model checkpoint.",
     )
     parser.add_argument(
+        "--download_if_missing",
+        action="store_true",
+        help="モデルファイルが見つからない場合に Hugging Face からダウンロードします。",
+    )
+    parser.add_argument(
+        "--hf_repo",
+        type=str,
+        default="faneggg/human3r",
+        help="自動ダウンロードに使う Hugging Face の repo ID。",
+    )
+    parser.add_argument(
+        "--hf_token",
+        type=str,
+        default="",
+        help="Hugging Face のアクセストークン。空なら HUGGINGFACE_HUB_TOKEN または HF_TOKEN を使います。",
+    )
+    parser.add_argument(
         "--seq_path",
         type=str,
         default="",
@@ -146,6 +163,53 @@ def parse_args():
         help="Mask morphology for the viewer",
     )
     return parser.parse_args()
+
+
+def _get_hf_token(cli_token):
+    if cli_token:
+        return cli_token
+    env_token = os.environ.get("HUGGINGFACE_HUB_TOKEN") or os.environ.get("HF_TOKEN")
+    return env_token
+
+
+def _resolve_model_path(args):
+    model_path = args.model_path
+    if os.path.exists(model_path):
+        return model_path
+
+    if not args.download_if_missing:
+        raise FileNotFoundError(
+            f"モデルファイルが見つかりません: {model_path}"
+        )
+
+    if not model_path.endswith((".pth", ".pt", ".bin")):
+        raise FileNotFoundError(
+            f"モデルファイルが見つかりません: {model_path}"
+        )
+
+    filename = os.path.basename(model_path)
+    local_dir = os.path.dirname(model_path) or "."
+    token = _get_hf_token(args.hf_token)
+
+    try:
+        from huggingface_hub import hf_hub_download, login
+    except ImportError as e:
+        raise ImportError(
+            "huggingface_hub が見つかりません。requirements を確認してください。"
+        ) from e
+
+    if token:
+        try:
+            login(token=token, add_to_git_credential=False)
+        except Exception:
+            pass
+
+    return hf_hub_download(
+        repo_id=args.hf_repo,
+        filename=filename,
+        local_dir=local_dir,
+        token=token,
+    )
 
 
 def prepare_input(
@@ -641,6 +705,12 @@ def run_inference(args):
     if device == "cuda" and not torch.cuda.is_available():
         print("CUDA not available. Switching to CPU.")
         device = "cpu"
+
+    try:
+        args.model_path = _resolve_model_path(args)
+    except Exception as err:
+        print(f"モデルの準備に失敗しました: {err}")
+        return
 
     # Add the checkpoint path (required for model imports in the dust3r package).
     add_path_to_dust3r(args.model_path)
