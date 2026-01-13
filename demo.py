@@ -106,6 +106,11 @@ def parse_args():
         help="Save output results.",
     )
     parser.add_argument(
+        "--save-json",
+        action="store_true",
+        help="関節の3D位置のみをJSONで保存し、可視化や他の出力を無視します。",
+    )
+    parser.add_argument(
         "--render",
         action="store_true",
         help="Save smpl mesh projection.",
@@ -344,8 +349,8 @@ def prepare_input(
     return views
 
 def prepare_output(
-        outputs, outdir, revisit=1, use_pose=True, 
-        save=False, render=False, render_video=False, img_res=None, subsample=1):
+        outputs, outdir, revisit=1, use_pose=True,
+        save=False, render=False, render_video=False, img_res=None, subsample=1, save_json=False):
     """
     Process inference outputs to generate point clouds and camera parameters for visualization.
 
@@ -360,9 +365,11 @@ def prepare_output(
     from src.dust3r.utils.camera import pose_encoding_to_camera
     from src.dust3r.post_process import estimate_focal_knowing_depth
     from src.dust3r.utils.geometry import geotrf, matrix_cumprod
-    from src.dust3r.utils import SMPL_Layer, vis_heatmap, render_meshes
+    from src.dust3r.utils import SMPL_Layer
     from src.dust3r.utils.image import unpad_image
-    from viser_utils import get_color
+    if render:
+        from src.dust3r.utils import vis_heatmap, render_meshes
+        from viser_utils import get_color
 
     # Only keep the outputs corresponding to one full pass.
     valid_length = len(outputs["pred"]) // revisit
@@ -488,7 +495,7 @@ def prepare_output(
     smpl_faces = smpl_layer.bm_x.faces
     joint_names = smpl_layer.joint_names
 
-    joints_json_by_human = {} if save else None
+    joints_json_by_human = {} if (save or save_json) else None
     axis_sign = {"x": 1.0, "y": -1.0, "z": 1.0}
 
     def joints_to_dict(joints, names):
@@ -524,6 +531,8 @@ def prepare_output(
         os.makedirs(os.path.join(outdir, "camera"), exist_ok=True)
         os.makedirs(os.path.join(outdir, "smpl"), exist_ok=True)
         os.makedirs(os.path.join(outdir, "json"), exist_ok=True)
+    elif save_json:
+        os.makedirs(os.path.join(outdir, "json"), exist_ok=True)
 
     all_verts = []
     for f_id in tqdm(range(B), desc="Processing frames"):
@@ -545,7 +554,7 @@ def prepare_output(
         c2w = cam2world_tosave[f_id].numpy()
         intrins = intrinsics_tosave[f_id].numpy()
 
-        if save and n_humans_i > 0:
+        if (save or save_json) and n_humans_i > 0:
             frame_key = str(f_id)
             camera_entry = {
                 "x": float(c2w[0, 3] * axis_sign["x"]),
@@ -567,11 +576,17 @@ def prepare_output(
             )
             for idx, pid in enumerate(person_ids[: j3d_cam.shape[0]]):
                 human_key = get_human_entry(pid)
-                joints_json_by_human[human_key]["frames"][frame_key] = {
-                    "camera": camera_entry.copy(),
-                    "3d_joints": joints_to_dict(j3d_cam[idx], names),
-                    "global_3d_joints": joints_to_dict(j3d_world[idx], names),
-                }
+                if save_json:
+                    joints_json_by_human[human_key]["frames"][frame_key] = {
+                        "3d_joints": joints_to_dict(j3d_cam[idx], names),
+                        "global_3d_joints": joints_to_dict(j3d_world[idx], names),
+                    }
+                else:
+                    joints_json_by_human[human_key]["frames"][frame_key] = {
+                        "camera": camera_entry.copy(),
+                        "3d_joints": joints_to_dict(j3d_cam[idx], names),
+                        "global_3d_joints": joints_to_dict(j3d_world[idx], names),
+                    }
 
         if n_humans_i > 0:
             # transform smpl verts to world coordinates
@@ -633,7 +648,7 @@ def prepare_output(
                 color_smpl,
             )
 
-    if save:
+    if save or save_json:
         json_dir = os.path.join(outdir, "json")
         for human_key, data in joints_json_by_human.items():
             json_path = os.path.join(json_dir, f"joints_3d_human_{human_key}_original.json")
@@ -718,7 +733,6 @@ def run_inference(args):
     # Import model and inference functions after adding the ckpt path.
     from src.dust3r.inference import inference_recurrent_lighter
     from src.dust3r.model import ARCroco3DStereo
-    from viser_utils import SceneHumanViewer
 
     # Prepare image file paths.
     img_paths, tmpdirname = parse_seq_path(args.seq_path)
@@ -765,8 +779,15 @@ def run_inference(args):
         f"Inference completed in {total_time:.2f} seconds (average {per_frame_time:.2f} s per frame)."
     )
 
-    # Process outputs for visualization.
-    print("Preparing output for visualization...")
+    save_json = args.save_json
+    save = args.save and not save_json
+    render = args.render and not save_json
+    render_video = args.render_video and not save_json
+    if save_json:
+        print("--save-json 指定のため、可視化と他の出力を無視して JSON のみ保存します。")
+
+    # Process outputs for visualization / saving.
+    print("Preparing output...")
     (
         pts3ds_other, 
         colors, 
@@ -777,11 +798,20 @@ def run_inference(args):
         smpl_id,
         msks,
         ) = prepare_output(
-        outputs, args.output_dir, 1, True, 
-        args.save, args.render, args.render_video, img_res, args.subsample
+        outputs,
+        args.output_dir,
+        1,
+        True,
+        save=save,
+        render=render,
+        render_video=render_video,
+        img_res=img_res,
+        subsample=args.subsample,
+        save_json=save_json,
     )
 
-    if not args.save:
+    if not save and not save_json:
+        from viser_utils import SceneHumanViewer
         # Convert tensors to numpy arrays for visualization.
         pts3ds_to_vis = [p.cpu().numpy() for p in pts3ds_other]
         colors_to_vis = [c.cpu().numpy() for c in colors]

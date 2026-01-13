@@ -85,6 +85,9 @@ CUDA_VISIBLE_DEVICES=0 python demo.py --model_path src/human3r_896L.pth \
     --subsample 1 --use_ttt3r --vis_threshold 2 \
     --downsample_factor 1 --reset_interval 100
 
+# To save only 3D joint positions as JSON (skip visualization and other outputs),
+# append `--save-json --output_dir OUT_DIR` to the command.
+
 ```
 
 ### Evaluation
