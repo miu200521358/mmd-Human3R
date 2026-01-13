@@ -891,7 +891,7 @@ def run_inference(args):
         args.model_path = _resolve_model_path(args)
     except Exception as err:
         print(f"モデルの準備に失敗しました: {err}")
-        return
+        return False, False
 
     # Add the checkpoint path (required for model imports in the dust3r package).
     add_path_to_dust3r(args.model_path)
@@ -904,7 +904,7 @@ def run_inference(args):
     img_paths, tmpdirname = parse_seq_path(args.seq_path)
     if not img_paths:
         print(f"No images found in {args.seq_path}. Please verify the path.")
-        return
+        return False, False
     
     if args.max_frames is not None:
         img_paths = img_paths[:args.max_frames]
@@ -912,25 +912,30 @@ def run_inference(args):
 
     frame_offset = 0
     json_frame_tag = None
+    total_frames = len(img_paths)
+    if total_frames == 0:
+        print(f"No images found in {args.seq_path}. Please verify the path.")
+        return False, False
+    all_frames_processed = True
     if args.block_frame_num is not None:
         if args.block_frame_num <= 0:
             print("--block_frame_num は 1 以上の値を指定してください。")
-            return
+            return False, False
         if args.block_index < 0:
             print("--block_index は 0 以上の値を指定してください。")
-            return
-        total_frames = len(img_paths)
+            return False, False
         block_start = args.block_index * args.block_frame_num
         block_end = block_start + args.block_frame_num
         if block_start >= total_frames:
             print(
                 f"--block_index が範囲外です。block_start={block_start}, total_frames={total_frames}"
             )
-            return
+            return False, False
         img_paths = img_paths[block_start:block_end]
         frame_offset = block_start
         json_frame_tag = f"{block_start:05d}"
         block_end_actual = block_start + len(img_paths) - 1
+        all_frames_processed = block_end_actual >= total_frames - 1
         print(
             f"Block: index={args.block_index}, range={block_start}-{block_end_actual} (total={total_frames})"
         )
@@ -1037,6 +1042,8 @@ def run_inference(args):
         )
         viewer.run()
 
+    return True, all_frames_processed
+
 def convert_vmd(args):
     """
     json を vmd に変換します。
@@ -1063,8 +1070,15 @@ def main():
         return
     else:
         start_time = time.time()
-        run_inference(args)
+        ok, all_done = run_inference(args)
+        if not ok:
+            return
         convert_vmd(args)
+        if all_done:
+            os.makedirs(args.output_dir, exist_ok=True)
+            complete_path = os.path.join(args.output_dir, "all_complete")
+            with open(complete_path, "w") as f:
+                f.write("complete\n")
         total_time = time.time() - start_time
         print(f"Human3R 処理終了: 合計時間 {total_time / 60:.2f} 分")
 
