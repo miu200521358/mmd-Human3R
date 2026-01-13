@@ -369,7 +369,7 @@ def prepare_input(
 def prepare_output(
         outputs, outdir, revisit=1, use_pose=True,
         save=False, render=False, render_video=False, img_res=None, subsample=1, save_json=False,
-        frame_offset=0):
+        frame_offset=0, json_frame_tag=None):
     """
     Process inference outputs to generate point clouds and camera parameters for visualization.
 
@@ -381,6 +381,7 @@ def prepare_output(
         render (bool): Whether to save smpl mesh projection.
         render_video (bool): Whether to save smpl mesh projection video.
         frame_offset (int): JSON に書き出すフレーム番号のオフセット。
+        json_frame_tag (str|None): JSON ファイル名に付ける開始フレーム表記 (例: "00000")。
     """
     from src.dust3r.utils.camera import pose_encoding_to_camera
     from src.dust3r.post_process import estimate_focal_knowing_depth
@@ -487,6 +488,7 @@ def prepare_output(
             return human_key
 
         os.makedirs(os.path.join(outdir, "json"), exist_ok=True)
+        json_suffix = f"_{json_frame_tag}" if json_frame_tag is not None else ""
         for f_id in tqdm(range(len(outputs["pred"])), desc="Processing frames"):
             pred = outputs["pred"][f_id]
             smpl_shape = pred.get("smpl_shape", torch.empty(1, 0, 10))[0]
@@ -536,7 +538,10 @@ def prepare_output(
 
         json_dir = os.path.join(outdir, "json")
         for human_key, data in joints_json_by_human.items():
-            json_path = os.path.join(json_dir, f"joints_3d_human_{human_key}_original.json")
+            json_path = os.path.join(
+                json_dir,
+                f"joints_3d_human_{human_key}_original{json_suffix}.json",
+            )
             with open(json_path, "w") as f:
                 json.dump(data, f, indent=4)
 
@@ -805,8 +810,12 @@ def prepare_output(
     print("prepare_output: 19")
     if save or save_json:
         json_dir = os.path.join(outdir, "json")
+        json_suffix = f"_{json_frame_tag}" if json_frame_tag is not None else ""
         for human_key, data in joints_json_by_human.items():
-            json_path = os.path.join(json_dir, f"joints_3d_human_{human_key}_original.json")
+            json_path = os.path.join(
+                json_dir,
+                f"joints_3d_human_{human_key}_original{json_suffix}.json",
+            )
             with open(json_path, "w") as f:
                 json.dump(data, f, indent=4)
 
@@ -902,6 +911,7 @@ def run_inference(args):
     img_paths = img_paths[::args.subsample]
 
     frame_offset = 0
+    json_frame_tag = None
     if args.block_frame_num is not None:
         if args.block_frame_num <= 0:
             print("--block_frame_num は 1 以上の値を指定してください。")
@@ -919,6 +929,7 @@ def run_inference(args):
             return
         img_paths = img_paths[block_start:block_end]
         frame_offset = block_start
+        json_frame_tag = f"{block_start:05d}"
         block_end_actual = block_start + len(img_paths) - 1
         print(
             f"Block: index={args.block_index}, range={block_start}-{block_end_actual} (total={total_frames})"
@@ -989,6 +1000,7 @@ def run_inference(args):
         subsample=args.subsample,
         save_json=save_json,
         frame_offset=frame_offset,
+        json_frame_tag=json_frame_tag,
     )
 
     if not save and not save_json:
