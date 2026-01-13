@@ -101,6 +101,12 @@ def parse_args():
         help="value for tempfile.tempdir",
     )
     parser.add_argument(
+        "--mat5_dir",
+        type=str,
+        default="../mmd-auto-trace-5",
+        help="Path to mmd-auto-trace-5 directory.",
+    )
+    parser.add_argument(
         "--save",
         action="store_true",
         help="Save output results.",
@@ -981,6 +987,22 @@ def run_inference(args):
         )
         viewer.run()
 
+def convert_vmd(args):
+    """
+    json を vmd に変換します。
+    """
+    import subprocess
+
+    out_path = os.path.join(args.output_dir, "json")
+    subprocess.run(
+        [
+            f"{args.mat5_dir}/mat5",
+            f"--modelPath={args.mat5_dir}/data/pmx/v4_trace_model.pmx",
+            f"--dirPath={out_path}",
+            "--logLevel=DEBUG",
+        ]
+    )
+
 
 def main():
     args = parse_args()
@@ -992,6 +1014,7 @@ def main():
     else:
         start_time = time.time()
         run_inference(args)
+        convert_vmd(args)
         total_time = time.time() - start_time
         print(f"Human3R 処理終了: 合計時間 {total_time / 60:.2f} 分")
 
