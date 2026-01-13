@@ -133,6 +133,18 @@ def parse_args():
         help="Max frames to use. Default is None (use all images).",
     )
     parser.add_argument(
+        "--block_frame_num",
+        type=int,
+        default=None,
+        help="ブロックごとのフレーム数。block_index*block_frame_num から切り出します。",
+    )
+    parser.add_argument(
+        "--block_index",
+        type=int,
+        default=0,
+        help="ブロック番号 (0始まり)。block_frame_num 指定時のみ使用します。",
+    )
+    parser.add_argument(
         "--subsample",
         type=int,
         default=1,
@@ -356,7 +368,8 @@ def prepare_input(
 
 def prepare_output(
         outputs, outdir, revisit=1, use_pose=True,
-        save=False, render=False, render_video=False, img_res=None, subsample=1, save_json=False):
+        save=False, render=False, render_video=False, img_res=None, subsample=1, save_json=False,
+        frame_offset=0):
     """
     Process inference outputs to generate point clouds and camera parameters for visualization.
 
@@ -367,6 +380,7 @@ def prepare_output(
         save (bool): Whether to save output results.
         render (bool): Whether to save smpl mesh projection.
         render_video (bool): Whether to save smpl mesh projection video.
+        frame_offset (int): JSON に書き出すフレーム番号のオフセット。
     """
     from src.dust3r.utils.camera import pose_encoding_to_camera
     from src.dust3r.post_process import estimate_focal_knowing_depth
@@ -515,7 +529,7 @@ def prepare_output(
             )
             for idx, pid in enumerate(person_ids[: j3d_cam.shape[0]]):
                 human_key = get_human_entry(pid)
-                joints_json_by_human[human_key]["frames"][str(f_id)] = {
+                joints_json_by_human[human_key]["frames"][str(f_id + frame_offset)] = {
                     "3d_joints": joints_to_dict(j3d_cam[idx], names),
                     "global_3d_joints": joints_to_dict(j3d_world[idx], names),
                 }
@@ -695,7 +709,7 @@ def prepare_output(
             conf = conf_self_tosave[f_id].numpy()
 
         if (save or save_json) and n_humans_i > 0:
-            frame_key = str(f_id)
+            frame_key = str(f_id + frame_offset)
             camera_entry = {
                 "x": float(c2w[0, 3] * axis_sign["x"]),
                 "y": float(c2w[1, 3] * axis_sign["y"]),
@@ -887,6 +901,29 @@ def run_inference(args):
         img_paths = img_paths[:args.max_frames]
     img_paths = img_paths[::args.subsample]
 
+    frame_offset = 0
+    if args.block_frame_num is not None:
+        if args.block_frame_num <= 0:
+            print("--block_frame_num は 1 以上の値を指定してください。")
+            return
+        if args.block_index < 0:
+            print("--block_index は 0 以上の値を指定してください。")
+            return
+        total_frames = len(img_paths)
+        block_start = args.block_index * args.block_frame_num
+        block_end = block_start + args.block_frame_num
+        if block_start >= total_frames:
+            print(
+                f"--block_index が範囲外です。block_start={block_start}, total_frames={total_frames}"
+            )
+            return
+        img_paths = img_paths[block_start:block_end]
+        frame_offset = block_start
+        block_end_actual = block_start + len(img_paths) - 1
+        print(
+            f"Block: index={args.block_index}, range={block_start}-{block_end_actual} (total={total_frames})"
+        )
+
     print(f"Found {len(img_paths)} images in {args.seq_path}.")
     img_mask = [True] * len(img_paths)
 
@@ -951,6 +988,7 @@ def run_inference(args):
         img_res=img_res,
         subsample=args.subsample,
         save_json=save_json,
+        frame_offset=frame_offset,
     )
 
     if not save and not save_json:
@@ -996,7 +1034,7 @@ def convert_vmd(args):
     out_path = os.path.join(args.output_dir, "json")
     subprocess.run(
         [
-            f"{args.mat5_dir}/mat5",
+            f"{args.mat5_dir}/go/cmd/mat5",
             f"--modelPath={args.mat5_dir}/data/pmx/v4_trace_model.pmx",
             f"--dirPath={out_path}",
             "--logLevel=DEBUG",

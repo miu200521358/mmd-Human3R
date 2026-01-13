@@ -87,6 +87,7 @@ CUDA_VISIBLE_DEVICES=0 python demo.py --model_path src/human3r_896L.pth \
 
 # To save only 3D joint positions as JSON (skip visualization and other outputs),
 # append `--save-json --output_dir OUT_DIR` to the command.
+# 動画をブロック単位で処理する場合は `--block_frame_num` と `--block_index` を指定します。
 
 ```
 
