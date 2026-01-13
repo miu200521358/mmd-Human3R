@@ -371,11 +371,13 @@ def prepare_output(
         from src.dust3r.utils import vis_heatmap, render_meshes
         from viser_utils import get_color
 
+    print("prepare_output: 01")
     # Only keep the outputs corresponding to one full pass.
     valid_length = len(outputs["pred"]) // revisit
     outputs["pred"] = outputs["pred"][-valid_length:]
     outputs["views"] = outputs["views"][-valid_length:]
 
+    print("prepare_output: 02")
     # delet overlaps: reset_mask=True outputs["pred"] and outputs["views"]
     reset_mask = torch.cat([view["reset"] for view in outputs["views"]], 0)
     shifted_reset_mask = torch.cat([torch.tensor(False).unsqueeze(0), reset_mask[:-1]], dim=0)
@@ -385,18 +387,21 @@ def prepare_output(
         view for view, mask in zip(outputs["views"], shifted_reset_mask) if not mask]
     reset_mask = reset_mask[~shifted_reset_mask]
 
+    print("prepare_output: 03")
     pts3ds_self_ls = [output["pts3d_in_self_view"] for output in outputs["pred"]]
     pts3ds_other = [output["pts3d_in_other_view"] for output in outputs["pred"]]
     conf_self = [output["conf_self"] for output in outputs["pred"]]
     conf_other = [output["conf"] for output in outputs["pred"]]
     pts3ds_self = torch.cat(pts3ds_self_ls, 0)
 
+    print("prepare_output: 04")
     # Recover camera poses.
     pr_poses = [
         pose_encoding_to_camera(pred["camera_pose"].clone()).cpu()
         for pred in outputs["pred"]
     ]
 
+    print("prepare_output: 05")
     # reset_mask = torch.cat([view["reset"] for view in outputs["views"]], 0)
     if reset_mask.any():
         pr_poses = torch.cat(pr_poses, 0)
@@ -408,9 +413,11 @@ def prepare_output(
         # keeps only reset_mask=False pr_poses
         pr_poses = list(pr_poses.unsqueeze(1).unbind(0))
 
+    print("prepare_output: 06")
     R_c2w = torch.cat([pr_pose[:, :3, :3] for pr_pose in pr_poses], 0)
     t_c2w = torch.cat([pr_pose[:, :3, 3] for pr_pose in pr_poses], 0)
 
+    print("prepare_output: 07")
     if use_pose:
         transformed_pts3ds_other = []
         for pose, pself in zip(pr_poses, pts3ds_self):
@@ -418,15 +425,18 @@ def prepare_output(
         pts3ds_other = transformed_pts3ds_other
         conf_other = conf_self
 
+    print("prepare_output: 08")
     # Estimate focal length based on depth.
     B, H, W, _ = pts3ds_self.shape
     pp = torch.tensor([W // 2, H // 2], device=pts3ds_self.device).float().repeat(B, 1)
     focal = estimate_focal_knowing_depth(pts3ds_self, pp, focal_mode="weiszfeld")
 
+    print("prepare_output: 09")
     colors = [
         0.5 * (output["img"].permute(0, 2, 3, 1) + 1.0) for output in outputs["views"]
     ]
 
+    print("prepare_output: 10")
     cam_dict = {
         "focal": focal.numpy(),
         "pp": pp.numpy(),
@@ -434,6 +444,7 @@ def prepare_output(
         "t": t_c2w.numpy(),
     }
 
+    print("prepare_output: 11")
     pts3ds_self_tosave = pts3ds_self  # B, H, W, 3
     depths_tosave = pts3ds_self_tosave[..., 2]
     pts3ds_other_tosave = torch.cat(pts3ds_other)  # B, H, W, 3
@@ -454,6 +465,7 @@ def prepare_output(
     intrinsics_tosave[:, 0, 2] = pp[:, 0]
     intrinsics_tosave[:, 1, 2] = pp[:, 1]
 
+    print("prepare_output: 12")
     # get SMPL parameters from outputs
     smpl_shape = [output.get(
         "smpl_shape", torch.empty(1,0,10))[0] for output in outputs["pred"]]
@@ -471,6 +483,7 @@ def prepare_output(
     # K_mhmr = [output.get(
     #     "K_mhmr", torch.empty(1,0,3))[0] for output in outputs["views"]]
         
+    print("prepare_output: 13")
     if render or save:
         smpl_scores = [
             output.get("smpl_scores", torch.zeros(1, H, W, 1))[...,0] for output in outputs["pred"]]
@@ -478,6 +491,7 @@ def prepare_output(
             smpl_scores = [
                 unpad_image(s, [H, W])[0] for s in smpl_scores]
 
+    print("prepare_output: 14")
     has_mask = "msk" in outputs["pred"][0]
     if has_mask:
         msks = [output["msk"][...,0] for output in outputs["pred"]]
@@ -486,6 +500,7 @@ def prepare_output(
     else:
         msks = [torch.zeros(1, H, W) for _ in range(B)]
 
+    print("prepare_output: 15")
     # SMPL layer
     smpl_layer = SMPL_Layer(type='smplx', 
                             gender='neutral', 
@@ -498,6 +513,7 @@ def prepare_output(
     joints_json_by_human = {} if (save or save_json) else None
     axis_sign = {"x": 1.0, "y": -1.0, "z": 1.0}
 
+    print("prepare_output: 16")
     def joints_to_dict(joints, names):
         return {
             name: {
@@ -523,6 +539,7 @@ def prepare_output(
             }
         return human_key
 
+    print("prepare_output: 17")
     if save:
         print(f"Saving output to {outdir}...")
         os.makedirs(os.path.join(outdir, "depth"), exist_ok=True)
@@ -534,6 +551,7 @@ def prepare_output(
     elif save_json:
         os.makedirs(os.path.join(outdir, "json"), exist_ok=True)
 
+    print("prepare_output: 18")
     all_verts = []
     for f_id in tqdm(range(B), desc="Processing frames"):
         n_humans_i = smpl_shape[f_id].shape[0]
@@ -648,6 +666,7 @@ def prepare_output(
                 color_smpl,
             )
 
+    print("prepare_output: 19")
     if save or save_json:
         json_dir = os.path.join(outdir, "json")
         for human_key, data in joints_json_by_human.items():
@@ -655,6 +674,7 @@ def prepare_output(
             with open(json_path, "w") as f:
                 json.dump(data, f, indent=4)
 
+    print("prepare_output: 20")
     if render and render_video:
         print(f"Saving smpl mesh projection to {outdir}...")
         frames_dir = os.path.join(outdir, "color_smpl")
@@ -665,6 +685,7 @@ def prepare_output(
                 f'-vcodec h264 -preset fast -profile:v baseline -pix_fmt yuv420p '
                 f'-movflags +faststart -b:v 5000k "{video_path}"')
     
+    print("prepare_output: 21")
     return (
         pts3ds_other,
         colors, 
