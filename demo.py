@@ -814,7 +814,7 @@ def prepare_output(
         for human_key, data in joints_json_by_human.items():
             json_path = os.path.join(
                 json_dir,
-                f"joints_3d_human_{human_key}_original{json_suffix}.json",
+                f"joints_3d_human_{human_key}_{json_suffix}_original.json",
             )
             with open(json_path, "w") as f:
                 json.dump(data, f, indent=4)
