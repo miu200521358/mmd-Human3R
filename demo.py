@@ -370,6 +370,7 @@ def prepare_output(
     if render:
         from src.dust3r.utils import vis_heatmap, render_meshes
         from viser_utils import get_color
+    json_only = save_json and not (save or render or render_video)
 
     print("prepare_output: 01")
     # Only keep the outputs corresponding to one full pass.
@@ -387,11 +388,14 @@ def prepare_output(
         view for view, mask in zip(outputs["views"], shifted_reset_mask) if not mask]
     reset_mask = reset_mask[~shifted_reset_mask]
 
+    need_viewer = not save and not save_json
     print("prepare_output: 03")
     pts3ds_self_ls = [output["pts3d_in_self_view"] for output in outputs["pred"]]
-    pts3ds_other = [output["pts3d_in_other_view"] for output in outputs["pred"]]
     conf_self = [output["conf_self"] for output in outputs["pred"]]
-    conf_other = [output["conf"] for output in outputs["pred"]]
+    pts3ds_other = (
+        [output["pts3d_in_other_view"] for output in outputs["pred"]] if need_viewer else []
+    )
+    conf_other = [output["conf"] for output in outputs["pred"]] if need_viewer else []
     pts3ds_self = torch.cat(pts3ds_self_ls, 0)
 
     print("prepare_output: 04")
@@ -413,12 +417,117 @@ def prepare_output(
         # keeps only reset_mask=False pr_poses
         pr_poses = list(pr_poses.unsqueeze(1).unbind(0))
 
+    if json_only:
+        for pred in outputs["pred"]:
+            pred.pop("pts3d_in_self_view", None)
+            pred.pop("pts3d_in_other_view", None)
+            pred.pop("conf_self", None)
+            pred.pop("conf", None)
+        outputs["views"] = []
+
+        if not outputs["pred"]:
+            return ([], [], [], {}, [], None, [], [])
+
+        first_shape = outputs["pred"][0].get("smpl_shape", torch.empty(1, 0, 10))[0]
+        num_betas = first_shape.shape[-1] if first_shape.ndim >= 2 else 10
+        smpl_layer = SMPL_Layer(
+            type="smplx",
+            gender="neutral",
+            num_betas=num_betas,
+            kid=False,
+            person_center="head",
+        )
+        joint_names = smpl_layer.joint_names
+        joints_json_by_human = {}
+        axis_sign = {"x": 1.0, "y": -1.0, "z": 1.0}
+
+        def joints_to_dict(joints, names):
+            return {
+                name: {
+                    "x": float(joint[0] * axis_sign["x"]),
+                    "y": float(joint[1] * axis_sign["y"]),
+                    "z": float(joint[2] * axis_sign["z"]),
+                }
+                for name, joint in zip(names, joints)
+            }
+
+        def normalize_human_index(human_id):
+            try:
+                return int(human_id)
+            except (TypeError, ValueError):
+                return str(human_id)
+
+        def get_human_entry(human_id):
+            human_key = str(human_id)
+            if human_key not in joints_json_by_human:
+                joints_json_by_human[human_key] = {
+                    "human_index": normalize_human_index(human_id),
+                    "frames": {},
+                }
+            return human_key
+
+        os.makedirs(os.path.join(outdir, "json"), exist_ok=True)
+        for f_id in tqdm(range(len(outputs["pred"])), desc="Processing frames"):
+            pred = outputs["pred"][f_id]
+            smpl_shape = pred.get("smpl_shape", torch.empty(1, 0, 10))[0]
+            n_humans_i = smpl_shape.shape[0]
+            if n_humans_i <= 0:
+                continue
+
+            smpl_rotmat = pred.get("smpl_rotmat", torch.empty(1, 0, 53, 3, 3))[0]
+            smpl_rotvec = roma.rotmat_to_rotvec(smpl_rotmat)
+            smpl_transl = pred.get("smpl_transl", torch.empty(1, 0, 3))[0]
+            smpl_expression = pred.get("smpl_expression", [None])[0]
+            smpl_id = pred.get("smpl_id", torch.empty(1, 0))[0]
+
+            intrinsics = torch.eye(3, device=smpl_shape.device).unsqueeze(0).repeat(
+                n_humans_i, 1, 1
+            )
+            with torch.no_grad():
+                smpl_out = smpl_layer(
+                    smpl_rotvec,
+                    smpl_shape,
+                    smpl_transl,
+                    None,
+                    None,
+                    K=intrinsics,
+                    expression=smpl_expression,
+                )
+
+            j3d_cam = smpl_out["smpl_j3d"].detach().cpu().numpy()
+            j3d_world = (
+                geotrf(pr_poses[f_id], smpl_out["smpl_j3d"].unsqueeze(0))[0]
+                .detach()
+                .cpu()
+                .numpy()
+            )
+            names = joint_names[: j3d_cam.shape[1]]
+            person_ids = (
+                smpl_id.detach().cpu().numpy().tolist()
+                if smpl_id.numel() > 0
+                else list(range(n_humans_i))
+            )
+            for idx, pid in enumerate(person_ids[: j3d_cam.shape[0]]):
+                human_key = get_human_entry(pid)
+                joints_json_by_human[human_key]["frames"][str(f_id)] = {
+                    "3d_joints": joints_to_dict(j3d_cam[idx], names),
+                    "global_3d_joints": joints_to_dict(j3d_world[idx], names),
+                }
+
+        json_dir = os.path.join(outdir, "json")
+        for human_key, data in joints_json_by_human.items():
+            json_path = os.path.join(json_dir, f"joints_3d_human_{human_key}_original.json")
+            with open(json_path, "w") as f:
+                json.dump(data, f, indent=4)
+
+        return ([], [], [], {}, [], None, [], [])
+
     print("prepare_output: 06")
     R_c2w = torch.cat([pr_pose[:, :3, :3] for pr_pose in pr_poses], 0)
     t_c2w = torch.cat([pr_pose[:, :3, 3] for pr_pose in pr_poses], 0)
 
     print("prepare_output: 07")
-    if use_pose:
+    if use_pose and need_viewer:
         transformed_pts3ds_other = []
         for pose, pself in zip(pr_poses, pts3ds_self):
             transformed_pts3ds_other.append(geotrf(pose, pself.unsqueeze(0)))
@@ -432,9 +541,12 @@ def prepare_output(
     focal = estimate_focal_knowing_depth(pts3ds_self, pp, focal_mode="weiszfeld")
 
     print("prepare_output: 09")
-    colors = [
-        0.5 * (output["img"].permute(0, 2, 3, 1) + 1.0) for output in outputs["views"]
-    ]
+    if need_viewer:
+        colors = [
+            0.5 * (output["img"].permute(0, 2, 3, 1) + 1.0) for output in outputs["views"]
+        ]
+    else:
+        colors = []
 
     print("prepare_output: 10")
     cam_dict = {
@@ -445,17 +557,9 @@ def prepare_output(
     }
 
     print("prepare_output: 11")
-    pts3ds_self_tosave = pts3ds_self  # B, H, W, 3
-    depths_tosave = pts3ds_self_tosave[..., 2]
-    pts3ds_other_tosave = torch.cat(pts3ds_other)  # B, H, W, 3
-    conf_self_tosave = torch.cat(conf_self)  # B, H, W
-    conf_other_tosave = torch.cat(conf_other)  # B, H, W
-    colors_tosave = torch.cat(
-        [
-            0.5 * (output["img"].permute(0, 2, 3, 1) + 1.0)
-            for output in outputs["views"]
-        ]
-    )  # [B, H, W, 3]
+    depths_tosave = None
+    conf_self_tosave = None
+    colors_tosave = None
     cam2world_tosave = torch.cat(pr_poses)  # B, 4, 4
     intrinsics_tosave = (
         torch.eye(3).unsqueeze(0).repeat(cam2world_tosave.shape[0], 1, 1)
@@ -464,6 +568,16 @@ def prepare_output(
     intrinsics_tosave[:, 1, 1] = focal.detach()
     intrinsics_tosave[:, 0, 2] = pp[:, 0]
     intrinsics_tosave[:, 1, 2] = pp[:, 1]
+    if save:
+        depths_tosave = pts3ds_self[..., 2]
+        conf_self_tosave = torch.cat(conf_self)  # B, H, W
+    if save or render:
+        colors_tosave = torch.cat(
+            [
+                0.5 * (output["img"].permute(0, 2, 3, 1) + 1.0)
+                for output in outputs["views"]
+            ]
+        )  # [B, H, W, 3]
 
     print("prepare_output: 12")
     # get SMPL parameters from outputs
@@ -566,11 +680,13 @@ def prepare_output(
                     K=intrinsics_tosave[f_id].expand(n_humans_i, -1 , -1), 
                     expression=smpl_expression[f_id])
         
-        depth = depths_tosave[f_id].numpy()
-        conf = conf_self_tosave[f_id].numpy()
-        color = colors_tosave[f_id].numpy()
-        c2w = cam2world_tosave[f_id].numpy()
-        intrins = intrinsics_tosave[f_id].numpy()
+        if save or render:
+            color = colors_tosave[f_id].numpy()
+            c2w = cam2world_tosave[f_id].numpy()
+            intrins = intrinsics_tosave[f_id].numpy()
+        if save:
+            depth = depths_tosave[f_id].numpy()
+            conf = conf_self_tosave[f_id].numpy()
 
         if (save or save_json) and n_humans_i > 0:
             frame_key = str(f_id)
