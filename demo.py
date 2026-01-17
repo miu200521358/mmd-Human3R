@@ -185,6 +185,12 @@ def parse_args():
         default=10,
         help="Mask morphology for the viewer",
     )
+    parser.add_argument(
+        "--convert_only",
+        action="store_true",
+        help="Only convert JSON to VMD without running full inference.",
+        default=False
+    )
     return parser.parse_args()
 
 
@@ -1050,15 +1056,16 @@ def convert_vmd(args):
     """
     import subprocess
 
-    out_path = os.path.join(args.output_dir, "json")
     subprocess.run(
         [
             f"{args.mat5_dir}/go/cmd/mat5",
             f"--modelPath={args.mat5_dir}/data/pmx/v4_trace_model.pmx",
-            f"--dirPath={out_path}",
+            f"--dirPath={args.output_dir}",
             "--logLevel=DEBUG",
         ]
     )
+
+    return True
 
 
 def main():
@@ -1070,10 +1077,11 @@ def main():
         return
     else:
         start_time = time.time()
-        ok, all_done = run_inference(args)
-        if not ok:
-            return
-        convert_vmd(args)
+        if not args.convert_only:
+            ok, all_done = run_inference(args)
+            if not ok:
+                return
+        all_done = convert_vmd(args)
         if all_done:
             os.makedirs(args.output_dir, exist_ok=True)
             complete_path = os.path.join(args.output_dir, "all_complete")
